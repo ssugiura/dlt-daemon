@@ -32,7 +32,7 @@ function gtest_run_test()
     export LIBC_FATAL_STDERR_=1
 
     # Execute unit test
-    { ./$1 ;} > $LOG 2>&1
+    { ./$1 ;}
 
     # Release
     export LIBC_FATAL_STDERR_=0
