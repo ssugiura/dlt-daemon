@@ -3621,13 +3621,31 @@ static void dlt_user_cleanup_handler(void *arg)
 void dlt_user_housekeeperthread_function(__attribute__((unused)) void *ptr)
 {
     struct timespec ts;
+    bool in_loop = true;
+
+#ifdef __ANDROID_API__
+    sigset_t set;
+    sigset_t pset;
+    /*
+     * bionic is not supporting pthread_cancel so
+     * use SIGUSR1 to kill thread properly.
+     */
+    sigemptyset(&set);
+    sigaddset(&set, SIGUSR1);
+    if (pthread_sigmask(SIG_BLOCK, &set, NULL) != 0) {
+        dlt_vlog(LOG_ERR, "Failed to block signal with error [%s]\n",
+                strerror(errno));
+        in_loop = false;
+    }
+#endif
+
 #ifdef linux
     prctl(PR_SET_NAME, "dlt_housekeeper", 0, 0, 0);
 #endif
 
     pthread_cleanup_push(dlt_user_cleanup_handler, NULL);
 
-    while (1) {
+    while (in_loop) {
         /* Check for new messages from DLT daemon */
         if (!dlt_user.disable_injection_msg)
             if (dlt_user_log_check_user_message() < DLT_RETURN_OK)
@@ -3640,6 +3658,19 @@ void dlt_user_housekeeperthread_function(__attribute__((unused)) void *ptr)
         /* flush buffer to DLT daemon if possible */
         if (dlt_user.dlt_log_handle != DLT_FD_INIT)
             dlt_user_log_resend_buffer();
+
+#ifdef __ANDROID_API__
+        if (sigpending(&pset)) {
+            dlt_vlog(LOG_ERR, "sigpending failed with error [%s]!\n", strerror(errno));
+            break;
+        }
+
+        if (sigismember(&pset, SIGUSR1)) {
+            dlt_log(LOG_NOTICE, "Received SIGUSR1! Stop thread\n");
+            break;
+        }
+#endif
+
         /* delay */
         ts.tv_sec = 0;
         ts.tv_nsec = DLT_USER_RECEIVE_NDELAY;
@@ -4265,6 +4296,7 @@ DltReturnValue dlt_user_log_check_user_message(void)
     int offset = 0;
     int leave_while = 0;
     int ret = 0;
+    int poll_timeout = 0;
 
     uint32_t i;
     int fd;
@@ -4299,12 +4331,18 @@ DltReturnValue dlt_user_log_check_user_message(void)
     nfd[0].events = POLLIN;
     nfd[0].fd = fd;
 
+#ifdef __ANDROID_API__
+    poll_timeout = DLT_USER_RECEIVE_MDELAY;
+#else
+    poll_timeout = -1;
+#endif
+
 #if defined DLT_LIB_USE_UNIX_SOCKET_IPC || defined DLT_LIB_USE_VSOCK_IPC
     if (fd != DLT_FD_INIT) {
-        ret = poll(nfd, 1, -1);
+        ret = poll(nfd, 1, poll_timeout);
 #else /* DLT_LIB_USE_FIFO_IPC */
     if (fd != DLT_FD_INIT && dlt_user.dlt_log_handle > 0) {
-        ret = poll(nfd, 1, DLT_USER_RECEIVE_NDELAY);
+        ret = poll(nfd, 1, DLT_USER_RECEIVE_MDELAY);
 #endif
         if (ret) {
             if (nfd[0].revents & (POLLHUP | POLLNVAL | POLLERR)) {
@@ -4801,7 +4839,7 @@ void dlt_stop_threads()
 #ifdef DLT_NETWORK_TRACE_ENABLE
         dlt_lock_mutex(&mq_mutex);
 #endif /* DLT_NETWORK_TRACE_ENABLE */
-        dlt_housekeeperthread_result = pthread_kill(dlt_housekeeperthread_handle, SIGKILL);
+        dlt_housekeeperthread_result = pthread_kill(dlt_housekeeperthread_handle, SIGUSR1);
         dlt_user_cleanup_handler(NULL);
 #endif
 
