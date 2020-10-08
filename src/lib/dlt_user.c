@@ -4356,7 +4356,7 @@ DltReturnValue dlt_user_log_check_user_message(void)
 
             /* look through buffer as long as data is in there */
             while (1) {
-                if (receiver->bytesRcvd < (int32_t)sizeof(DltUserHeader))
+                if (receiver->bytesRcvd < (int32_t) sizeof(DltUserHeader))
                     break;
 
                 /* resync if necessary */
@@ -4371,7 +4371,7 @@ DltReturnValue dlt_user_log_check_user_message(void)
 
                     offset++;
 
-                } while ((int32_t)(sizeof(DltUserHeader) + offset) <= receiver->bytesRcvd);
+                } while ((int32_t) (sizeof(DltUserHeader) + offset) <= receiver->bytesRcvd);
 
                 /* Check for user header pattern */
                 if ((dlt_user_check_userheader(userheader) < 0) ||
@@ -4387,7 +4387,7 @@ DltReturnValue dlt_user_log_check_user_message(void)
                 switch (userheader->message) {
                 case DLT_USER_MESSAGE_LOG_LEVEL:
                 {
-                    if (receiver->bytesRcvd < (int32_t)(sizeof(DltUserHeader) + sizeof(DltUserControlMsgLogLevel))) {
+                    if (receiver->bytesRcvd < (int32_t) (sizeof(DltUserHeader) + sizeof(DltUserControlMsgLogLevel))) {
                         leave_while = 1;
                         break;
                     }
@@ -4442,7 +4442,7 @@ DltReturnValue dlt_user_log_check_user_message(void)
                 case DLT_USER_MESSAGE_INJECTION:
                 {
                     /* At least, user header, user context, and service id and data_length of injected message is available */
-                    if (receiver->bytesRcvd < (int32_t)(sizeof(DltUserHeader) + sizeof(DltUserControlMsgInjection))) {
+                    if (receiver->bytesRcvd < (int32_t) (sizeof(DltUserHeader) + sizeof(DltUserControlMsgInjection))) {
                         leave_while = 1;
                         break;
                     }
@@ -4454,7 +4454,7 @@ DltReturnValue dlt_user_log_check_user_message(void)
                     if (userbuffer != NULL) {
 
                         if (receiver->bytesRcvd <
-                            (int32_t)(sizeof(DltUserHeader) + sizeof(DltUserControlMsgInjection) +
+                            (int32_t) (sizeof(DltUserHeader) + sizeof(DltUserControlMsgInjection) +
                                       usercontextinj->data_length_inject)) {
                             leave_while = 1;
                             break;
@@ -4536,7 +4536,7 @@ DltReturnValue dlt_user_log_check_user_message(void)
                 case DLT_USER_MESSAGE_LOG_STATE:
                 {
                     /* At least, user header, user context, and service id and data_length of injected message is available */
-                    if (receiver->bytesRcvd < (int32_t)(sizeof(DltUserHeader) + sizeof(DltUserControlMsgLogState))) {
+                    if (receiver->bytesRcvd < (int32_t) (sizeof(DltUserHeader) + sizeof(DltUserControlMsgLogState))) {
                         leave_while = 1;
                         break;
                     }
