@@ -591,8 +591,21 @@ int dlt_logstorage_open_log_file(DltLogStorageFilterConfig *config,
     }
 
     if (config->log == NULL) {
-        dlt_log(LOG_ERR,
-                "dlt_logstorage_create_log_file: Unable to open log file.\n");
+        if (*tmp != NULL) {
+            if ((*tmp)->name != NULL) {
+                free((*tmp)->name);
+                (*tmp)->name = NULL;
+            }
+            free(*tmp);
+            *tmp = NULL;
+        }
+
+        if (config->working_file_name != NULL) {
+            free(config->working_file_name);
+            config->working_file_name = NULL;
+        }
+
+        dlt_vlog(LOG_ERR, "%s: Unable to open log file.\n", __func__);
         return -1;
     }
 
