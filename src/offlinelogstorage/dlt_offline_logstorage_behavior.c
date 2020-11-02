@@ -498,7 +498,7 @@ int dlt_logstorage_open_log_file(DltLogStorageFilterConfig *config,
         ret = stat(absolute_file_path, &s);
 
         /* if size is enough, open it */
-        if ((ret == 0) && (s.st_size + msg_size < (int)config->file_size)) {
+        if ((ret == 0) && (s.st_size + msg_size <= (int) config->file_size)) {
             config->log = fopen(absolute_file_path, "a+");
             config->current_write_file_offset = s.st_size;
         }
