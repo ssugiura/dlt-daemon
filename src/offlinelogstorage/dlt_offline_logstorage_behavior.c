@@ -1024,8 +1024,10 @@ int dlt_logstorage_prepare_msg_cache(DltLogStorageFilterConfig *config,
             free(config->working_file_name);
             config->working_file_name = NULL;
         }
-        config->working_file_name = strdup(newest_file_info->newest_file);
-        config->wrap_id = newest_file_info->wrap_id;
+        if (config->working_file_name == NULL) {
+            config->working_file_name = strdup(newest_file_info->newest_file);
+            config->wrap_id = newest_file_info->wrap_id;
+        }
     }
 
     /* Combinations allowed: on Daemon_Exit with on Demand,File_Size with Daemon_Exit
