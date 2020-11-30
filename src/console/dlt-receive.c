@@ -76,6 +76,7 @@
 #include <glob.h>
 #include <syslog.h>
 #include <signal.h>
+#include <sys/socket.h>
 #ifdef __linux__
 #   include <linux/limits.h>
 #else
@@ -87,7 +88,6 @@
 
 #define DLT_RECEIVE_ECU_ID "RECV"
 
-int g_exit = 0;
 DltClient dltclient;
 
 void signal_handler(int signal)
@@ -99,7 +99,6 @@ void signal_handler(int signal)
     case SIGQUIT:
         /* stop main loop */
         shutdown(dltclient.receiver.fd, SHUT_RD);
-        g_exit = -1;
         break;
     default:
         /* This case should never happen! */
@@ -337,7 +336,6 @@ int main(int argc, char *argv[])
     struct sigaction act;
     act.sa_handler = signal_handler;
     sigemptyset(&act.sa_mask);
-    act.sa_flags = SA_RESTART;
     sigaction(SIGHUP, &act, 0);
     sigaction(SIGTERM, &act, 0);
     sigaction(SIGINT, &act, 0);
@@ -552,11 +550,6 @@ int main(int argc, char *argv[])
 
         /* Dlt Client Cleanup */
         dlt_client_cleanup(&dltclient, dltdata.vflag);
-    }
-
-    /* dlt-receive flush data */
-    if (g_exit < 0) {
-        fflush(stdout);
     }
 
     /* dlt-receive cleanup */
