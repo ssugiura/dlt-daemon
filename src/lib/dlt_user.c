@@ -4298,7 +4298,7 @@ DltReturnValue dlt_user_log_check_user_message(void)
     int offset = 0;
     int leave_while = 0;
     int ret = 0;
-    int poll_timeout = 0;
+    int poll_timeout = DLT_USER_RECEIVE_MDELAY;
 
     uint32_t i;
     int fd;
@@ -4327,25 +4327,22 @@ DltReturnValue dlt_user_log_check_user_message(void)
 
 #if defined DLT_LIB_USE_UNIX_SOCKET_IPC || defined DLT_LIB_USE_VSOCK_IPC
     fd = dlt_user.dlt_log_handle;
+#ifndef __ANDROID_API__
+    poll_timeout = -1;
+#endif
 #else /* DLT_LIB_USE_FIFO_IPC */
     fd = dlt_user.dlt_user_handle;
 #endif
     nfd[0].events = POLLIN;
     nfd[0].fd = fd;
 
-#ifdef __ANDROID_API__
-    poll_timeout = DLT_USER_RECEIVE_MDELAY;
-#else
-    poll_timeout = -1;
-#endif
-
 #if defined DLT_LIB_USE_UNIX_SOCKET_IPC || defined DLT_LIB_USE_VSOCK_IPC
     if (fd != DLT_FD_INIT) {
-        ret = poll(nfd, 1, poll_timeout);
 #else /* DLT_LIB_USE_FIFO_IPC */
     if (fd != DLT_FD_INIT && dlt_user.dlt_log_handle > 0) {
-        ret = poll(nfd, 1, DLT_USER_RECEIVE_MDELAY);
 #endif
+        ret = poll(nfd, 1, poll_timeout);
+
         if (ret) {
             if (nfd[0].revents & (POLLHUP | POLLNVAL | POLLERR)) {
                 dlt_user.dlt_log_handle = DLT_FD_INIT;
